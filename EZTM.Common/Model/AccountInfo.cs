@@ -6,8 +6,8 @@
         public string TdaConsumerKey { get; set; }
 
         public bool UseSchwabEquity { get; set; }
-        public string TradeSchwabClientId { get; set; }
-        public string TradeSchwabClientSecret { get; set; }
+        public string SchwabClientId { get; set; }
+        public string SchwabClientSecret { get; set; }
 
 
         public bool UseTSEquity { get; set; }
