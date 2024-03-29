@@ -5,6 +5,11 @@
         public bool UseTdaEquity { get; set; }
         public string TdaConsumerKey { get; set; }
 
+        public bool UseSchwabEquity { get; set; }
+        public string TradeSchwabClientId { get; set; }
+        public string TradeSchwabClientSecret { get; set; }
+
+
         public bool UseTSEquity { get; set; }
         public string TradeStationClientId { get; set; }
         public string TradeStationClientSecret { get; set; }
