@@ -4,10 +4,12 @@ using EZTM.Common.Model;
 using EZTM.Common.Tda.Model;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.Encodings.Web;
 using Websocket.Client;
@@ -21,14 +23,15 @@ namespace EZTM.Common.Tda
 
         private StreamWriter _replayFile;
 
-        public const string ACCESSTOKENCONTAINER = "tda-accesstokencontainer.json";
+        public const string ACCESSTOKENCONTAINER = "schwab-accesstokencontainer.json";
         public static HttpClient _httpClient = new HttpClient();
-        public static Uri BaseUri = new Uri("https://api.tdameritrade.com");
+        public static Uri BaseUri = new Uri("https://api.schwabapi.com");
 
 
-        public const string routeGetToken = "v1/oauth2/token";
+        public const string routeGetToken = "v1/oauth/token";
+        public const string routeGetAccountNumbers = "trader/v1/accounts/accountNumbers";
+        public const string routeGetAccounts = "trader/v1/accounts";
         public const string routeGetAccount = "v1/accounts/{0}?fields=positions,orders";
-        public const string routeGetAccounts = "v1/accounts";
         public const string routeCancelOrder = "v1/accounts/{0}/orders/{1}";
         public const string routePlaceOrder = "v1/accounts/{0}/orders";
         public const string routeReplaceOrder = "v1/accounts/{0}/orders/{1}";
@@ -66,7 +69,7 @@ namespace EZTM.Common.Tda
         public override void Initialize()
         {
             _ = RefreshAccessToken().Result;
-            ConnectSocket();
+            //ConnectSocket();
 
             Task.Run(CheckTokenRefresh);
 
@@ -332,8 +335,10 @@ namespace EZTM.Common.Tda
         {
             get
             {
-                SplitTdaConsumerKey(AccountInfo.TdaConsumerKey, out string consumerKey, out string redirectUri);
-                return $"https://auth.tdameritrade.com/auth?response_type=code&redirect_uri={UrlEncoder.Create().Encode(redirectUri)}&client_id={consumerKey}%40AMER.OAUTHAP";
+                //SplitTdaConsumerKey(AccountInfo.TdaConsumerKey, out string consumerKey, out string redirectUri);
+                //return $"https://auth.tdameritrade.com/auth?response_type=code&redirect_uri={UrlEncoder.Create().Encode(redirectUri)}&client_id={consumerKey}%40AMER.OAUTHAP";
+                //return $"https://api.schwabapi.com/v1/oauth/authorize?response_type=code&client_id={AccountInfo.SchwabClientId}&redirect_uri=http%3A%2F%2F127.0.0.1&scope=readonly";
+                return $"https://api.schwabapi.com/v1/oauth/authorize?response_type=code&client_id={AccountInfo.SchwabClientId}&scope=readonly&redirect_uri=https://127.0.0.1";
             }
         }
 
@@ -341,7 +346,8 @@ namespace EZTM.Common.Tda
         {
             get
             {
-                return (AccessTokenContainer == null || (AccessTokenContainer.TokenSystem == AccessTokenContainer.EnumTokenSystem.TDA && (AccessTokenContainer.IsRefreshTokenExpired || AccessTokenContainer.RefreshTokenExpiresInDays < 5)));
+                //return (AccessTokenContainer == null || (AccessTokenContainer.TokenSystem == AccessTokenContainer.EnumTokenSystem.TDA && (AccessTokenContainer.IsRefreshTokenExpired || AccessTokenContainer.RefreshTokenExpiresInDays < 5)));
+                return (AccessTokenContainer == null);// || (AccessTokenContainer.TokenSystem == AccessTokenContainer.EnumTokenSystem.TDA && (AccessTokenContainer.IsRefreshTokenExpired || AccessTokenContainer.RefreshTokenExpiresInDays < 5)));
             }
         }
 
@@ -354,6 +360,18 @@ namespace EZTM.Common.Tda
         }
 
 
+        static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+
+        private static string Base64Credentials(AccountInfo accountInfo)
+        {
+            return Base64Encode($"{accountInfo.SchwabClientId}:{accountInfo.SchwabClientSecret}");
+        }
+
         /// <summary>
         /// Get access token.  This call is called only when a refresh token is needed.  TS should never expire and TDA expires once every 90 days.
         /// </summary>
@@ -365,22 +383,27 @@ namespace EZTM.Common.Tda
             {
                 var accountInfo = GetAccountInfo();
 
-                SplitTdaConsumerKey(accountInfo.TdaConsumerKey, out string consumerKey, out string redirectUri);
+
+                // Set your Base64-encoded Client ID and Client Secret
+                string base64Credentials = Base64Credentials(accountInfo);
+
+                // Set the redirect URI
+                string redirectUri = "https://127.0.0.1"; // Replace with actual value
 
                 List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
                 postData.Add(new KeyValuePair<string, string>("grant_type", "authorization_code"));
-                postData.Add(new KeyValuePair<string, string>("access_type", "offline"));
                 postData.Add(new KeyValuePair<string, string>("code", $"{authToken}"));
-                postData.Add(new KeyValuePair<string, string>("client_id", $"{consumerKey}@AMER.OAUTHTD"));
                 postData.Add(new KeyValuePair<string, string>("redirect_uri", $"{redirectUri}"));
-
+        
                 FormUrlEncodedContent content = new FormUrlEncodedContent(postData);
                 var rawSTring = await content.ReadAsStringAsync();
-                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken)) //Uri."https://api.tdameritrade.com/v1/oauth2/token"); // ; 
+                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken)) 
                 {
                     Method = HttpMethod.Post,
                     Content = content
                 };
+                request.Headers.Clear();
+                request.Headers.Add("Authorization", $"Basic {base64Credentials}");
 
                 var response = await _httpClient.SendAsync(request);
 
@@ -400,6 +423,54 @@ namespace EZTM.Common.Tda
             }
         }
 
+        public async Task<AccessTokenContainer> RefreshRefreshToken()
+        {
+            try
+            {
+                var accountInfo = GetAccountInfo();
+
+
+                // Set your Base64-encoded Client ID and Client Secret
+                string base64Credentials = Base64Credentials(accountInfo);
+
+                // Set the redirect URI
+                string redirectUri = "https://127.0.0.1"; // Replace with actual value
+
+                List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
+                postData.Add(new KeyValuePair<string, string>("grant_type", "refresh_token"));
+                postData.Add(new KeyValuePair<string, string>("refresh_token", AccessTokenContainer.RefreshToken));
+                postData.Add(new KeyValuePair<string, string>("access_type", "offline"));
+                postData.Add(new KeyValuePair<string, string>("redirect_uri", $"{redirectUri}"));
+
+                FormUrlEncodedContent content = new FormUrlEncodedContent(postData);
+                var rawSTring = await content.ReadAsStringAsync();
+                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken))
+                {
+                    Method = HttpMethod.Post,
+                    Content = content
+                };
+                request.Headers.Clear();
+                request.Headers.Add("Authorization", $"Basic {base64Credentials}");
+
+                var response = await _httpClient.SendAsync(request);
+
+                AccessTokenContainer = DeserializeJsonFromStream<AccessTokenContainer>(await response.Content.ReadAsStreamAsync());
+                AccessTokenContainer.TokenSystem = AccessTokenContainer.EnumTokenSystem.TDA;
+
+                //Write the access token container, this should ahve the refresh token
+                SaveAccessTokenContainer(ACCESSTOKENCONTAINER, AccessTokenContainer);
+
+                return AccessTokenContainer;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.StackTrace);
+                throw;
+            }
+        }
+
+
         public override async Task<AccessTokenContainer> RefreshAccessToken()
         {
             try
@@ -407,25 +478,26 @@ namespace EZTM.Common.Tda
                 Debug.WriteLine($"Calling RefreshAccessToken:  {DateTime.Now.ToShortTimeString()}");
                 var accountInfo = GetAccountInfo();
 
-                SplitTdaConsumerKey(accountInfo.TdaConsumerKey, out string consumerKey, out string redirectUri);
+                // Set your Base64-encoded Client ID and Client Secret
+                string base64Credentials = Base64Credentials(accountInfo);
 
                 List<KeyValuePair<string, string>> postData = new List<KeyValuePair<string, string>>();
                 postData.Add(new KeyValuePair<string, string>("grant_type", "refresh_token"));
                 postData.Add(new KeyValuePair<string, string>("refresh_token", AccessTokenContainer.RefreshToken));
-                postData.Add(new KeyValuePair<string, string>("client_id", $"{consumerKey}@AMER.OAUTHTD"));
 
                 FormUrlEncodedContent content = new FormUrlEncodedContent(postData);
-                var rawSTring = await content.ReadAsStringAsync();
-                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken)) //Uri."https://api.tdameritrade.com/v1/oauth2/token"); // ; 
+                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken)) 
                 {
                     Method = HttpMethod.Post,
                     Content = content
                 };
 
+                request.Headers.Clear();
+                request.Headers.Add("Authorization", $"Basic {base64Credentials}");
+
                 var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
                 var newAccessTokenContainer = DeserializeJsonFromStream<AccessTokenContainer>(await response.Content.ReadAsStreamAsync());
-
 
                 //Add the refresh token back as it doesn't come back with the payload.
                 newAccessTokenContainer.RefreshToken = AccessTokenContainer.RefreshToken;
@@ -493,7 +565,7 @@ namespace EZTM.Common.Tda
             return Securitiesaccount;
         }
 
-        public async Task<List<Account>> GetAccounts()
+        public async Task<List<Securitiesaccount>> GetAccounts()
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, routeGetAccounts))
             {
@@ -503,9 +575,25 @@ namespace EZTM.Common.Tda
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessTokenContainer.AccessToken);
 
             var response = await _httpClient.SendAsync(request);
-            var account = DeserializeJsonFromStream<List<Account>>(await response.Content.ReadAsStreamAsync());
+            var account = DeserializeJsonFromStream<List<Securitiesaccount>>(await response.Content.ReadAsStreamAsync());
 
             return account;
+        }
+
+
+        public async Task<List<AccountNumberHash>> GetAccountNumberHash()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, routeGetAccountNumbers))
+            {
+                Method = HttpMethod.Get,
+            };
+
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessTokenContainer.AccessToken);
+
+            var response = await _httpClient.SendAsync(request);
+            var accountNumbers = DeserializeJsonFromStream<List<AccountNumberHash>>(await response.Content.ReadAsStreamAsync());
+
+            return accountNumbers;
         }
 
         public async Task<Securitiesaccount> GetTransactions(string accountId, string symbol)
