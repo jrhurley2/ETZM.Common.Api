@@ -1,15 +1,13 @@
 ﻿using EZTM.Common.Interfaces;
 using EZTM.Common.Model;
-using EZTM.Common.Tda.Model;
+using EZTM.Common.Schwab.Model;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
-using Websocket.Client;
-using Websocket.Client.Models;
 
 namespace EZTM.Common
 {
-    public abstract class Brokerage : IBrokerage, IStreamer
+    public abstract class Brokerage : IBrokerage //, IStreamer
     {
         private static string AccountInfoFile = "AccountInfo.json";
 
@@ -25,39 +23,39 @@ namespace EZTM.Common
         public abstract string AccountId { get; }
         #endregion
 
-        #region IStreamer Abstract Properites
-        public abstract IObservable<AcctActivity> AcctActivity { get; }
-        public abstract IObservable<DisconnectionInfo> Disconnection { get; }
-        public abstract IObservable<Model.StockQuote> FutureQuoteReceived { get; }
-        public abstract IObservable<SocketNotify> HeartBeat { get; }
-        public abstract IObservable<OrderFillMessage> OrderFilled { get; }
-        public abstract IObservable<OrderEntryRequestMessage> OrderRecieved { get; }
-        public abstract IObservable<ReconnectionInfo> Reconnection { get; }
-        public abstract IObservable<Model.StockQuote> StockQuoteReceived { get; }
-        public abstract WebsocketClient WebsocketClient { get; }
-        #endregion
+        //#region IStreamer Abstract Properites
+        //public abstract IObservable<AcctActivity> AcctActivity { get; }
+        //public abstract IObservable<DisconnectionInfo> Disconnection { get; }
+        //public abstract IObservable<Model.StockQuote> FutureQuoteReceived { get; }
+        //public abstract IObservable<SocketNotify> HeartBeat { get; }
+        //public abstract IObservable<OrderFillMessage> OrderFilled { get; }
+        //public abstract IObservable<OrderEntryRequestMessage> OrderRecieved { get; }
+        //public abstract IObservable<ReconnectionInfo> Reconnection { get; }
+        //public abstract IObservable<Model.StockQuote> StockQuoteReceived { get; }
+        //public abstract WebsocketClient WebsocketClient { get; }
+        //#endregion
 
         #region IBrokerage Abstract Methods
         public abstract Task<AccessTokenContainer> GetAccessToken(string authToken);
         public abstract Task<AccessTokenContainer> RefreshAccessToken();
         public abstract Task<ulong> PlaceOrder(string accountId, Order order);
-        public abstract Task<Securitiesaccount> GetAccount(string accountId);
+        public abstract Task<Securitiesaccount> GetAccountByAccountId(string accountId);
         public abstract Task<ulong> ReplaceOrder(string accountId, string orderId, Order newOrder);
         public abstract Task CancelOrder(string accountId, Order order);
         public abstract Order GetInitialLimitOrder(Securitiesaccount securitiesaccount, Order triggerOrder);
-        public abstract Model.StockQuote SetStockQuote(Model.StockQuote stockQuote);
-        public abstract Model.StockQuote GetStockQuote(string symbol);
+        public abstract Schwab.Model.StockQuote SetStockQuote(Schwab.Model.StockQuote stockQuote);
+        public abstract Schwab.Model.StockQuote GetStockQuote(string symbol);
         public abstract Task CancelAll(string accountId, string symbol);
         public abstract Task<IStreamer> GetStreamer();
-        public abstract Task<UserPrincipal> GetUserPrincipals();
+        public abstract Task<UserPreference> GetUserPreference();
         #endregion
 
-        #region IStreamer Abstract Methods
-        public abstract void Dispose();
-        public abstract void SubscribeChartData(string tickerSymbol);
-        public abstract void SubscribeFuture(string tickerSymbol);
-        public abstract void SubscribeQuote(string tickerSymbol);
-        #endregion
+        //#region IStreamer Abstract Methods
+        //public abstract void Dispose();
+        //public abstract void SubscribeChartData(string tickerSymbol);
+        //public abstract void SubscribeFuture(string tickerSymbol);
+        //public abstract void SubscribeQuote(string tickerSymbol);
+        //#endregion
 
 
         #region OrderHelper

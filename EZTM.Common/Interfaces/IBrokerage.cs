@@ -1,5 +1,5 @@
 ﻿using EZTM.Common.Model;
-using EZTM.Common.Tda.Model;
+using EZTM.Common.Schwab.Model;
 
 namespace EZTM.Common.Interfaces
 {
@@ -25,6 +25,7 @@ namespace EZTM.Common.Interfaces
 
         public Task<AccessTokenContainer> GetAccessToken(string authToken);
         public Task<AccessTokenContainer> RefreshAccessToken();
+        public Task<UserPreference> GetUserPreference();
         public Task<UserPrincipal> GetUserPrincipals()
         {
             // TODO: Can we merge GetUserPrincipals and GetAccounts in some way?
@@ -37,12 +38,12 @@ namespace EZTM.Common.Interfaces
         //    return null;
         //}
         public Task<ulong> PlaceOrder(string accountId, Order order);
-        public Task<Securitiesaccount> GetAccount(string accountId);
+        public Task<Securitiesaccount> GetAccountByAccountId(string accountId);
         public Task<ulong> ReplaceOrder(string accountId, string orderId, Order newOrder);
         public Task CancelOrder(string accountId, Order order);
         public Order GetInitialLimitOrder(Securitiesaccount securitiesaccount, Order triggerOrder);
-        public EZTM.Common.Model.StockQuote SetStockQuote(EZTM.Common.Model.StockQuote stockQuote);
-        public EZTM.Common.Model.StockQuote GetStockQuote(string symbol);
+        public Schwab.Model.StockQuote SetStockQuote(Schwab.Model.StockQuote stockQuote);
+        public Schwab.Model.StockQuote GetStockQuote(string symbol);
         public Task CancelAll(string accountId, string symbol);
         public Task<IStreamer> GetStreamer();
     }
