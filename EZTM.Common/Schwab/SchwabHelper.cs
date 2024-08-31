@@ -27,7 +27,7 @@ namespace EZTM.Common.Schwab
 
         public const string routeGetAccountNumbers = "trader/v1/accounts/accountNumbers";
         public const string routeGetAccounts = "trader/v1/accounts";
-        public const string routeGetAccountByAccountId= "trader/v1/accounts/{0}";
+        public const string routeGetAccountByAccountId = "trader/v1/accounts/{0}?fields=positions";
         public const string routeGetUserPreferences = "trader/v1/userPreference";
 
 
@@ -57,6 +57,7 @@ namespace EZTM.Common.Schwab
 
         private Dictionary<string, StockQuote> _stockQuotes = new();
         private AccessTokenContainer accessTokenContainer;
+        private List<AccountNumberHash> _accountNumberHashes;
 
         public SchwabHelper(AccountInfo ai)
         {
@@ -64,13 +65,12 @@ namespace EZTM.Common.Schwab
         }
 
 
-        public override void Initialize()
+        public async override void Initialize()
         {
             _ = RefreshAccessToken().Result;
             //ConnectSocket();
 
             Task.Run(CheckTokenRefresh);
-
         }
 
 
@@ -179,10 +179,10 @@ namespace EZTM.Common.Schwab
                 postData.Add(new KeyValuePair<string, string>("grant_type", "authorization_code"));
                 postData.Add(new KeyValuePair<string, string>("code", $"{authToken}"));
                 postData.Add(new KeyValuePair<string, string>("redirect_uri", $"{redirectUri}"));
-        
+
                 FormUrlEncodedContent content = new FormUrlEncodedContent(postData);
                 var rawSTring = await content.ReadAsStringAsync();
-                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken)) 
+                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken))
                 {
                     Method = HttpMethod.Post,
                     Content = content
@@ -271,7 +271,7 @@ namespace EZTM.Common.Schwab
                 postData.Add(new KeyValuePair<string, string>("refresh_token", AccessTokenContainer.RefreshToken));
 
                 FormUrlEncodedContent content = new FormUrlEncodedContent(postData);
-                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken)) 
+                var request = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, routeGetToken))
                 {
                     Method = HttpMethod.Post,
                     Content = content
@@ -281,6 +281,15 @@ namespace EZTM.Common.Schwab
                 request.Headers.Add("Authorization", $"Basic {base64Credentials}");
 
                 var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+
+                //Add code to handle the response status code.
+
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    Debug.WriteLine($"RefreshAccessToken failed: {response.StatusCode}");
+                    Debug.WriteLine($"RefreshAccessToken failed: {await response.Content.ReadAsStringAsync()}");
+                    throw new Exception($"RefreshAccessToken failed: {response.StatusCode}");
+                }
 
                 var newAccessTokenContainer = DeserializeJsonFromStream<AccessTokenContainer>(await response.Content.ReadAsStreamAsync());
 
@@ -310,12 +319,13 @@ namespace EZTM.Common.Schwab
 
             var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
 
-            if(response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                try { 
-                var userPrefernces = JsonConvert.DeserializeObject<UserPreference>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
-                return userPrefernces;
-                    }
+                try
+                {
+                    var userPrefernces = JsonConvert.DeserializeObject<UserPreference>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                    return userPrefernces;
+                }
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
@@ -331,7 +341,6 @@ namespace EZTM.Common.Schwab
         #endregion
 
         #region Accounts
-
         public async Task<List<AccountNumberHash>> GetAccountNumberHash()
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, routeGetAccountNumbers))
@@ -341,7 +350,7 @@ namespace EZTM.Common.Schwab
 
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessTokenContainer.AccessToken);
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var accountNumbers = DeserializeJsonFromStream<List<AccountNumberHash>>(await response.Content.ReadAsStreamAsync());
 
             return accountNumbers;
@@ -422,7 +431,7 @@ namespace EZTM.Common.Schwab
 
             var today = DateTimeOffset.Now;
             var startDate = new DateTimeOffset(today.Year, today.Month, today.Day, 4, 00, 00, new TimeSpan(-4, 0, 0));
-            var endDate = new DateTimeOffset(today.Year, today.Month, today.Day, 19, 00, 00, new TimeSpan(-4, 0, 0));
+            var endDate = new DateTimeOffset(today.Year, today.Month, today.Day, 23, 00, 00, new TimeSpan(-4, 0, 0));
 
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetOrdersByAccount, accountId, startDate.ToString("O"), endDate.ToString("O"))))
             {
@@ -453,9 +462,10 @@ namespace EZTM.Common.Schwab
             }
         }
 
+
         public override async Task<ulong> PlaceOrder(string accountId, Order order)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routePlaceOrder, accountId)))
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routePlaceOrder, GetHashValue())))
             {
                 Method = HttpMethod.Post,
                 Content = Serialize(order)
@@ -477,7 +487,17 @@ namespace EZTM.Common.Schwab
             return orderNumber;
         }
 
-        public async Task<Order> GetOrderByOrderId(string accountId, string orderId)
+        private string GetHashValue()
+        {
+            if (_accountNumberHashes == null)
+            {
+                _accountNumberHashes = GetAccountNumberHash().Result;
+            }
+
+            return _accountNumberHashes.First(a => a.accountNumber.Equals(AccountInfo.SchwabAccountNumber)).hashValue;
+        }
+
+        public async Task<Order> GetOrderByOrderId(string orderId)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetOrderByOrderId, accountId, orderId)))
             {
@@ -508,14 +528,14 @@ namespace EZTM.Common.Schwab
             }
         }
 
-        public override async Task CancelOrder(string accountId, Order order)
+        public override async Task CancelOrder(Order order)
         {
-            await CancelOrder(accountId, order.orderId);
+            await CancelOrder(order.orderId);
         }
 
-        public async Task CancelOrder(string accountId, string orderId)
+        public async Task CancelOrder(string orderId)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeCancelOrder, accountId, orderId)))
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeCancelOrder, GetHashValue(), orderId)))
             {
                 Method = HttpMethod.Delete,
             };
@@ -659,7 +679,7 @@ namespace EZTM.Common.Schwab
 
 
         #region Quotes
-        public async Task<Dictionary<string,StockDetailedQuote>> GetQuote(string symbol)
+        public async Task<Dictionary<string, StockDetailedQuote>> GetQuote(string symbol)
         {
             StockQuote quote = null;
             Dictionary<string, StockDetailedQuote> quotes = null;
@@ -679,7 +699,7 @@ namespace EZTM.Common.Schwab
                 {
                     try
                     {
-                        quotes  = DeserializeJsonFromStream<Dictionary<string, StockDetailedQuote>>(await response.Content.ReadAsStreamAsync());
+                        quotes = DeserializeJsonFromStream<Dictionary<string, StockDetailedQuote>>(await response.Content.ReadAsStreamAsync());
 
                     }
                     catch (Exception ex)
@@ -772,20 +792,19 @@ namespace EZTM.Common.Schwab
             return _stockQuotes[symbol];
         }
 
-        public override async Task CancelAll(string accountId, string symbol)
+        public override async Task CancelAll(string symbol)
         {
-            var securitiesaccount = await this.GetAccountByAccountId(accountId);
+            var orders = await this.GetOrdersByAccount(GetHashValue());
 
-            if (securitiesaccount != null)
+            if (orders != null)
             {
 
-                var openOrders = Brokerage.GetOpenOrders(securitiesaccount.FlatOrders, symbol);
-                //var openOrders = securitiesaccount.FlatOrders.Where(o => (o.status == "QUEUED" || o.status == "WORKING" || o.status == "PENDING_ACTIVATION") && o.orderLegCollection[0].instrument.symbol.Equals(symbol, StringComparison.InvariantCultureIgnoreCase));
+                var openOrders = Brokerage.GetOpenOrders(Order.FlattenOrders(orders), symbol);
 
                 var tasks = new List<Task>();
                 foreach (var order in openOrders)
                 {
-                    var task = this.CancelOrder(accountId, order);
+                    var task = this.CancelOrder(order);
                     tasks.Add(task);
                 }
 

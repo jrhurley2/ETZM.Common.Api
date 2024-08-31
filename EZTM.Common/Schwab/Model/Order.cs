@@ -13,6 +13,28 @@
         public List<OrderLeg> orderLegCollection { get; set; }
 
         public List<Order> childOrderStrategies { get; set; }
+
+
+        public static List<Order> FlattenOrders(List<Order> orders)
+        {
+            List<Order> result = new List<Order>();
+
+            foreach (var order in orders)
+            {
+                result.Add(order);
+                if (order.childOrderStrategies != null && order.childOrderStrategies.Count > 0)
+                {
+                    var childOrders = FlattenOrders(order.childOrderStrategies);
+                    foreach (var childOrderStrategy in childOrders)
+                    {
+                        result.Add(childOrderStrategy);
+                    }
+                }
+
+            }
+            return result;
+        }
+
     }
 
 
@@ -22,5 +44,6 @@
         public float quantity { get; set; }
         public Instrument instrument { get; set; }
     }
+
 
 }

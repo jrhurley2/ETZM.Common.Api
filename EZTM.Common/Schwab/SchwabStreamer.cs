@@ -183,7 +183,7 @@ namespace EZTM.Common.Schwab
         
             var streamingParameters = new StreamerSettings.Parameters
             {
-                keys = "dummy",
+                keys = "Account Activity",
                 fields = "0,1,2,3"
             };
 
@@ -443,6 +443,7 @@ namespace EZTM.Common.Schwab
                 else if (v.ContainsKey("data"))
                 {
                     var r = v["data"];
+                    Debug.WriteLine(r);
 
 
                     var data = JsonConvert.DeserializeObject<List<SocketData>>(v["data"].ToString());
@@ -458,7 +459,7 @@ namespace EZTM.Common.Schwab
                                 var quoteJson = content.ToDictionary(k => k.Key, k => k.Value.ToString());
                                 var stockQuote = new Model.StockQuote(quoteJson);
                                 _stockQuoteRecievedSubject.OnNext(stockQuote);
-                                Debug.WriteLine("TDStreamer:" + JsonConvert.SerializeObject(stockQuote));
+                                //Debug.WriteLine("TDStreamer:" + JsonConvert.SerializeObject(stockQuote));
                             }
                         }
                         else if (service == "LEVELONE_FUTURES")

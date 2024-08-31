@@ -78,7 +78,7 @@ namespace EZTM.Common.Tests.Integration
             Assert.IsNotNull(actual);
             if(actual.Count == 0) Assert.Inconclusive("No Orders Present");
 
-            var getOrder = await _schwabHelper.GetOrderByOrderId(accountMap[0].hashValue, actual[0].orderId);
+            var getOrder = await _schwabHelper.GetOrderByOrderId(actual[0].orderId);
             Assert.IsNotNull(getOrder);
 
 
@@ -101,7 +101,7 @@ namespace EZTM.Common.Tests.Integration
 
             Assert.IsTrue(actual > 0);
 
-            await _schwabHelper.CancelOrder(accountMap[0].hashValue, actual.ToString()).ConfigureAwait(true);
+            await _schwabHelper.CancelOrder(actual.ToString()).ConfigureAwait(true);
         }
 
         [TestCategory("Integration")]
@@ -114,7 +114,7 @@ namespace EZTM.Common.Tests.Integration
             var actual = await _schwabHelper.PlaceOrder(accountMap[0].hashValue, order).ConfigureAwait(true);
             Assert.IsTrue(actual > 0);
 
-            await _schwabHelper.CancelOrder(accountMap[0].hashValue, actual.ToString()).ConfigureAwait(true);
+            await _schwabHelper.CancelOrder(actual.ToString()).ConfigureAwait(true);
 
         }
         #endregion
@@ -134,6 +134,11 @@ namespace EZTM.Common.Tests.Integration
         public async Task GetQuote()
         {
             var actual = await _schwabHelper.GetQuote("AAPL").ConfigureAwait(true);
+
+            while(1==1)
+            {
+                Thread.Sleep(1000);
+            }
             Assert.IsNotNull(actual);
         }
 

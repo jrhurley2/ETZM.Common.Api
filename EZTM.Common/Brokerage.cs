@@ -41,11 +41,11 @@ namespace EZTM.Common
         public abstract Task<ulong> PlaceOrder(string accountId, Order order);
         public abstract Task<Securitiesaccount> GetAccountByAccountId(string accountId);
         public abstract Task<ulong> ReplaceOrder(string accountId, string orderId, Order newOrder);
-        public abstract Task CancelOrder(string accountId, Order order);
+        public abstract Task CancelOrder(Order order);
         public abstract Order GetInitialLimitOrder(Securitiesaccount securitiesaccount, Order triggerOrder);
         public abstract Schwab.Model.StockQuote SetStockQuote(Schwab.Model.StockQuote stockQuote);
         public abstract Schwab.Model.StockQuote GetStockQuote(string symbol);
-        public abstract Task CancelAll(string accountId, string symbol);
+        public abstract Task CancelAll(string symbol);
         public abstract Task<IStreamer> GetStreamer();
         public abstract Task<UserPreference> GetUserPreference();
         #endregion
@@ -219,7 +219,7 @@ namespace EZTM.Common
         {
             return orders.Where(o => (o.status == "QUEUED" || o.status == "WORKING" || o.status == "PENDING_ACTIVATION") &&
                                      (o.orderLegCollection != null && o.orderLegCollection[0].instrument.symbol.Equals(symbol, StringComparison.CurrentCultureIgnoreCase))).ToList<Order>();
-
+                
         }
 
         public static int CalculateShares(double riskPerShare, double maxRisk, double minRisk, bool tradeShares = false)
