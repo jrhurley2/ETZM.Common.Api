@@ -192,8 +192,9 @@ namespace EZTM.Common.Tests.Integration
             while (iter < 30)
             {
                 sut.StockQuoteReceived.Subscribe(s => hasQuote = s.symbol.Equals("AAPL"));
-                //if (hasQuote) break;
+                if (hasQuote) break;
                 await Task.Delay(1000);
+                iter++;
             }
 
             Assert.IsTrue(hasQuote);
@@ -224,7 +225,7 @@ namespace EZTM.Common.Tests.Integration
             while (iter < 30)
             {
                 sut.StockQuoteReceived.Subscribe(s => hasQuote = s.symbol.Equals("AAPL"));
-                //if (hasQuote) break;
+                if (hasQuote) break;
                 await Task.Delay(1000);
             }
 
@@ -336,7 +337,7 @@ namespace EZTM.Common.Tests.Integration
                 this.PlaceLimitOrder().Wait();
 
                 iter = 0;
-                while (iter < 30)
+                while (iter < 5)
                 {
                     await Task.Delay(1000);
                     iter++;
@@ -348,10 +349,5 @@ namespace EZTM.Common.Tests.Integration
                 sut.Dispose();
             }
         }
-
-
-
-
-
     }
 }
