@@ -40,6 +40,8 @@ namespace EZTM.Common.Schwab
 
         //public const string routeGetAccountByAccountId = "v1/accounts/{0}?fields=positions,orders";
         public const string routeGetQuote = "marketdata/v1/quotes?symbols={0}";
+        public const string routeGetOptionExpirationChain = "marketdata/v1/expirationchain?symbol={0}";
+        public const string routeGetOptionChain = "marketdata/v1/chains?symbol={0}";
         //public const string routeGetPriceHistory = "v1/marketdata/{0}/pricehistory?periodType=day&period=2&frequencyType=minute&frequency=1&needExtendedHoursData=true&startDate={1}&endDate={2}";
         public const string routeGetPriceHistory = "marketdata/v1/pricehistory?symbol={0}&periodType=day&frequencyType=minute&frequency=1&needExtendedHoursData=true&startDate={1}&endDate={2}";
 
@@ -681,53 +683,51 @@ namespace EZTM.Common.Schwab
         #region Quotes
         public async Task<Dictionary<string, StockDetailedQuote>> GetQuote(string symbol)
         {
-            StockQuote quote = null;
-            Dictionary<string, StockDetailedQuote> quotes = null;
-            try
-            {
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetQuote, symbol)))
-                {
-                    Method = HttpMethod.Get,
-                };
-
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessTokenContainer.AccessToken);
-
-                var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
-
-
-                if (response.IsSuccessStatusCode)
-                {
-                    try
-                    {
-                        quotes = DeserializeJsonFromStream<Dictionary<string, StockDetailedQuote>>(await response.Content.ReadAsStreamAsync());
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex.Message);
-                        Debug.WriteLine($"Message Content: {await response.Content.ReadAsStringAsync()} ");
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine("Call to get Securities Account failed!");
-                    Debug.WriteLine($"GetAccount Response {response.StatusCode}: {response.Content}");
-                    Debug.WriteLine($"AccessContainerToken.ExpiresIn: {AccessTokenContainer.ExpiresIn}");
-                    Debug.WriteLine($"AccessTokenContainer.IsTokenExpired: {AccessTokenContainer.IsTokenExpired}");
-                    Debug.WriteLine($"{await response.Content.ReadAsStringAsync()}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine(ex.StackTrace);
-            }
-
-            return quotes;
-
+            var route = new Uri(BaseUri, string.Format(routeGetQuote, symbol));
+            return await GetAsync<Dictionary<string, StockDetailedQuote>>(route);
         }
         #endregion
 
+        public async Task<OptionExpirationChain> GetOptionExpirationChain(string symbol)
+        {
+            var route = new Uri(BaseUri, string.Format(routeGetOptionExpirationChain, symbol));
+            return await GetAsync<OptionExpirationChain>(route);
+        }
+
+        public async Task<OptionChain> GetOptionChain(string symbol)
+        {
+            var route = new Uri(BaseUri, string.Format(routeGetOptionChain, symbol));
+            return await GetAsync<OptionChain>(route);
+        }
+
+
+        /// <summary>
+        /// Generic routine that sends a Get Request and returns the generic
+        /// </summary>
+        public async Task<T> GetAsync<T>(Uri route)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, route)
+            {
+                Method = HttpMethod.Get,
+            };
+
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessTokenContainer.AccessToken);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception(response.ReasonPhrase);
+            }
+
+            var result = DeserializeJsonFromStream<T>(await response.Content.ReadAsStreamAsync());
+
+            return result;
+        }
+
+
+        /// <param name="symbol"></param>
+        /// <returns></returns>
 
         public async Task<CandleList> GetPriceHistoryAsync(string symbol)
         {

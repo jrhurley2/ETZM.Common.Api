@@ -127,20 +127,39 @@ namespace EZTM.Common.Tests.Integration
             var actual = await _schwabHelper.GetPriceHistoryAsync("AAPL").ConfigureAwait(true);
             Assert.IsNotNull(actual);
         }
-        #endregion
 
         [TestCategory("Integration")]
         [TestMethod]
         public async Task GetQuote()
         {
             var actual = await _schwabHelper.GetQuote("AAPL").ConfigureAwait(true);
-
-            while(1==1)
-            {
-                Thread.Sleep(1000);
-            }
             Assert.IsNotNull(actual);
         }
+
+
+        [TestCategory("Integration")]
+        [TestMethod]
+        public async Task GetOptionExpirationChain()
+        {
+            var actual = await _schwabHelper.GetOptionExpirationChain("AAPL").ConfigureAwait(true);
+            var actualExpirationlist = actual.expirationList.First();
+
+            Assert.IsNotNull(actual);
+            Assert.IsTrue(actual.expirationList.Length > 0);
+            Assert.IsFalse(string.IsNullOrEmpty(actualExpirationlist.expirationDate));
+        }
+
+        [TestCategory("Integration")]
+        [TestMethod]
+        public async Task GetOptionChain()
+        {
+            //await _schwabHelper.GetOptionChain("AAPL").ConfigureAwait(true);
+            var actual = await _schwabHelper.GetOptionChain("AAPL").ConfigureAwait(true);
+            Assert.IsNotNull(actual);
+        }
+
+        #endregion
+
 
         [TestCategory("Integration")]
         [TestMethod]

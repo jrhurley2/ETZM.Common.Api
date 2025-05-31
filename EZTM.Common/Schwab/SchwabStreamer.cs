@@ -480,7 +480,7 @@ namespace EZTM.Common.Schwab
 
                             foreach (var content in socketData.content)
                             {
-
+                                Debug.WriteLine(content["2"]);
                                 //if (content["2"] == "OrderEntryRequest")
                                 //{
                                 //    try
