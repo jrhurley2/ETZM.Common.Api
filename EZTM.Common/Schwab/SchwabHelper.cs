@@ -114,6 +114,7 @@ namespace EZTM.Common.Schwab
             }
         }
 
+
         public override AccessTokenContainer AccessTokenContainer
         {
             get
@@ -363,7 +364,7 @@ namespace EZTM.Common.Schwab
             Securitiesaccount securitiesaccount = null;
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetAccountByAccountId, accountId)))
+                var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetAccountByAccountId, GetHashValue())))
                 {
                     Method = HttpMethod.Get,
                 };
@@ -428,14 +429,14 @@ namespace EZTM.Common.Schwab
         #endregion
 
         #region Orders
-        public async Task<List<Order>> GetOrdersByAccount(string accountId)
+        public override async Task<List<Order>> GetOrdersByAccount(string accountId)
         {
 
             var today = DateTimeOffset.Now;
             var startDate = new DateTimeOffset(today.Year, today.Month, today.Day, 4, 00, 00, new TimeSpan(-4, 0, 0));
             var endDate = new DateTimeOffset(today.Year, today.Month, today.Day, 23, 00, 00, new TimeSpan(-4, 0, 0));
 
-            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetOrdersByAccount, accountId, startDate.ToString("O"), endDate.ToString("O"))))
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, string.Format(routeGetOrdersByAccount, GetHashValue() /*accountId*/, startDate.ToString("O"), endDate.ToString("O"))))
             {
                 Method = HttpMethod.Get,
             };
@@ -688,15 +689,36 @@ namespace EZTM.Common.Schwab
         }
         #endregion
 
-        public async Task<OptionExpirationChain> GetOptionExpirationChain(string symbol)
+        public override async Task<OptionExpirationChain> GetOptionExpirationChain(string symbol)
         {
             var route = new Uri(BaseUri, string.Format(routeGetOptionExpirationChain, symbol));
             return await GetAsync<OptionExpirationChain>(route);
         }
 
-        public async Task<OptionChain> GetOptionChain(string symbol)
+        public override async Task<OptionChain> GetOptionChain(string symbol)
         {
-            var route = new Uri(BaseUri, string.Format(routeGetOptionChain, symbol));
+            return await GetOptionChain(symbol, null, null);
+        }
+
+        public override async Task<OptionChain> GetOptionChain(string symbol, string minDate, string maxDate)
+        {
+            var baseRoute = string.Format(routeGetOptionChain, symbol.ToUpper());
+            var uriBuilder = new UriBuilder(new Uri(BaseUri, baseRoute));
+
+            var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+
+            if (!string.IsNullOrEmpty(minDate))
+            {
+                query["fromDate"] = minDate;
+            }
+            if (!string.IsNullOrEmpty(maxDate))
+            {
+                query["toDate"] = maxDate;
+            }
+
+            uriBuilder.Query = query.ToString();
+            var route = uriBuilder.Uri;
+
             return await GetAsync<OptionChain>(route);
         }
 

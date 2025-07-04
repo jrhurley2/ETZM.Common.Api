@@ -41,11 +41,16 @@ namespace EZTM.Common.Interfaces
         public Task<Securitiesaccount> GetAccountByAccountId(string accountId);
         public Task<ulong> ReplaceOrder(string accountId, string orderId, Order newOrder);
         public Task CancelOrder(Order order);
+        public Task<List<Order>> GetOrdersByAccount(string accountId);
+
         public Order GetInitialLimitOrder(Securitiesaccount securitiesaccount, Order triggerOrder);
         public Schwab.Model.StockQuote SetStockQuote(Schwab.Model.StockQuote stockQuote);
         public Schwab.Model.StockQuote GetStockQuote(string symbol);
         public Task CancelAll(string symbol);
         public Task<IStreamer> GetStreamer();
+        public Task<OptionExpirationChain> GetOptionExpirationChain(string symbol);
+        public Task<OptionChain> GetOptionChain(string symbol);
+        public Task<OptionChain> GetOptionChain(string symbol, string minDate, string maxDate);
     }
 
 }

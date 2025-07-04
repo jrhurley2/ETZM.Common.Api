@@ -6,7 +6,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
 using Websocket.Client;
-using Websocket.Client.Models;
+//using Websocket.Client.Models;
 
 namespace EZTM.Common.Schwab
 {
@@ -35,11 +35,11 @@ namespace EZTM.Common.Schwab
         private readonly Subject<AcctActivity> _acctActivity = new Subject<AcctActivity>();
         public IObservable<AcctActivity> AcctActivity => _acctActivity.AsObservable();
 
-        private readonly Subject<OrderEntryRequestMessage> _orderEntryRequestMessage = new Subject<OrderEntryRequestMessage>();
-        public IObservable<OrderEntryRequestMessage> OrderRecieved => _orderEntryRequestMessage.AsObservable();
+        private readonly Subject<OrderCreatedEvent> _orderCreatedEvent = new Subject<OrderCreatedEvent>();
+        public IObservable<OrderCreatedEvent> OrderCreated=> _orderCreatedEvent.AsObservable();
 
-        private readonly Subject<OrderFillMessage> _orderFillMessage = new Subject<OrderFillMessage>();
-        public IObservable<OrderFillMessage> OrderFilled => _orderFillMessage.AsObservable();
+        private readonly Subject<AcctActivityEvent> _orderFillCompletedEvent = new Subject<AcctActivityEvent>();
+        public IObservable<AcctActivityEvent> OrderFillCompleted => _orderFillCompletedEvent.AsObservable();
 
         private readonly Subject<SocketNotify> _socketNotify = new Subject<SocketNotify>();
         public IObservable<SocketNotify> HeartBeat => _socketNotify.AsObservable();
@@ -92,6 +92,7 @@ namespace EZTM.Common.Schwab
             var url = new Uri(_userPreference.streamerInfo[0].streamerSocketUrl);
 
             _ws = new WebsocketClient(url);
+            //_ws.NativeClient.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
             _ws.ReconnectTimeout = TimeSpan.FromSeconds(30);
 
             SubscribeWebSocketMessages(_userPreference, _ws);
@@ -481,6 +482,38 @@ namespace EZTM.Common.Schwab
                             foreach (var content in socketData.content)
                             {
                                 Debug.WriteLine(content["2"]);
+                                if (content["2"].Equals("OrderCreated"))
+                                {
+                                    var orderCreatedEvent = JsonConvert.DeserializeObject<OrderCreatedEvent>(content["3"].ToString());
+                                    _orderCreatedEvent.OnNext(orderCreatedEvent);
+                                }
+
+                                if (content["2"].Equals("OrderFillCompleted"))
+                                {
+                                    var acctActivityEvent = JsonConvert.DeserializeObject<AcctActivityEvent>(content["2"].ToString());
+                                }
+                                //    try
+                                //    {
+                                //        Debug.WriteLine(content["3"]);
+                                //        //Check that the order is a stock order, will throw excption if it is options, etc...
+                                //        if (content["3"].Contains("EquityOrderT"))
+                                //        {
+                                //            var orderFillMessage = OrderFillMessage.ParseXml(content["3"]);
+                                //            _orderFillMessage.OnNext(orderFillMessage);
+                                //        }
+                                //        else
+                                //        {
+                                //            Debug.WriteLine("We don't handle messages other than EquityOrderT");
+                                //        }
+                                //    }
+                                //    catch (Exception ex)
+                                //    {
+                                //        Debug.WriteLine(ex.Message);
+                                //        Debug.WriteLine(ex.StackTrace);
+                                //    }
+                                //}
+
+
                                 //if (content["2"] == "OrderEntryRequest")
                                 //{
                                 //    try
@@ -488,7 +521,7 @@ namespace EZTM.Common.Schwab
                                 //        //Parsing was inconsitnat don't have a complete XML Schema, and wasn't using it on the other side.
                                 //        //var orderEntryRequestMessage = OrderEntryRequestMessage.ParseXml(content["3"]);
                                 //        var orderEntryRequestMessage = new OrderEntryRequestMessage();
-                                //        _orderEntryRequestMessage.OnNext(orderEntryRequestMessage);
+                                //        _orderCreatedEvent.OnNext(orderEntryRequestMessage);
                                 //    }
                                 //    catch (Exception ex)
                                 //    {

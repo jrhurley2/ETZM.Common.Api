@@ -117,6 +117,7 @@ namespace EZTM.Common.Tests.Integration
             await _schwabHelper.CancelOrder(actual.ToString()).ConfigureAwait(true);
 
         }
+
         #endregion
 
         #region MarketData

@@ -42,12 +42,17 @@ namespace EZTM.Common
         public abstract Task<Securitiesaccount> GetAccountByAccountId(string accountId);
         public abstract Task<ulong> ReplaceOrder(string accountId, string orderId, Order newOrder);
         public abstract Task CancelOrder(Order order);
+        public abstract Task<List<Order>> GetOrdersByAccount(string accountId);
         public abstract Order GetInitialLimitOrder(Securitiesaccount securitiesaccount, Order triggerOrder);
         public abstract Schwab.Model.StockQuote SetStockQuote(Schwab.Model.StockQuote stockQuote);
         public abstract Schwab.Model.StockQuote GetStockQuote(string symbol);
         public abstract Task CancelAll(string symbol);
         public abstract Task<IStreamer> GetStreamer();
         public abstract Task<UserPreference> GetUserPreference();
+        public abstract Task<OptionExpirationChain> GetOptionExpirationChain(string symbol);
+        public abstract Task<OptionChain> GetOptionChain(string symbol);
+        public abstract Task<OptionChain> GetOptionChain(string symbol, string minDate, string maxDate);
+
         #endregion
 
         //#region IStreamer Abstract Methods

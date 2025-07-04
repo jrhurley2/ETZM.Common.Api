@@ -1,7 +1,7 @@
 ﻿using EZTM.Common.Model;
 using EZTM.Common.Schwab.Model;
 using Websocket.Client;
-using Websocket.Client.Models;
+//using Websocket.Client.Models;
 
 namespace EZTM.Common.Interfaces
 {
@@ -11,8 +11,8 @@ namespace EZTM.Common.Interfaces
         IObservable<DisconnectionInfo> Disconnection { get; }
         IObservable<StockQuote> FutureQuoteReceived { get; }
         IObservable<SocketNotify> HeartBeat { get; }
-        IObservable<OrderFillMessage> OrderFilled { get; }
-        IObservable<OrderEntryRequestMessage> OrderRecieved { get; }
+        IObservable<AcctActivityEvent> OrderFillCompleted { get; }
+        IObservable<OrderCreatedEvent> OrderCreated { get; }
         IObservable<ReconnectionInfo> Reconnection { get; }
         IObservable<StockQuote> StockQuoteReceived { get; }
         WebsocketClient WebsocketClient { get; }

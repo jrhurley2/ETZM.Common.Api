@@ -7,41 +7,62 @@ namespace EZTM.Common.Schwab.Model
 
     public class Root
     {
-        public Securitiesaccount securitiesAccount { get; set; }
+        [JsonProperty("securitiesAccount")]
+        public Securitiesaccount SecuritiesAccount { get; set; }
     }
 
     public class Securitiesaccount
     {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("accountNumber")]
+        public string AccountNumber { get; set; }
+
+        [JsonProperty("roundTrips")]
+        public int RoundTrips { get; set; }
+
+        [JsonProperty("isDayTrader")]
+        public bool IsDayTrader { get; set; }
+
+        [JsonProperty("isClosingOnlyRestricted")]
+        public bool IsClosingOnlyRestricted { get; set; }
+
+        [JsonProperty("pfcbFlag")]
+        public bool PfcbFlag { get; set; }
+
+        [JsonProperty("initialBalances")]
+        public Initialbalances InitialBalances { get; set; }
+
+        [JsonProperty("currentBalances")]
+        public Currentbalances CurrentBalances { get; set; }
+
+        [JsonProperty("projectedBalances")]
+        public Projectedbalances ProjectedBalances { get; set; }
+
+        [JsonProperty("orderStrategies")]
+        public Order[] OrderStrategies { get; set; }
+
+        [JsonProperty("positions")]
+        public Position[] Positions { get; set; }
+
         public static List<Securitiesaccount> ParseAccounts(string json)
         {
-            //Deserialize RootObject
             var rootList = JsonConvert.DeserializeObject<List<Root>>(json);
-            return rootList.Select(r => r.securitiesAccount).ToList();
+            return rootList.Select(r => r.SecuritiesAccount).ToList();
         }
 
         public static Securitiesaccount ParseAccount(string json)
         {
-            var rootList = JsonConvert.DeserializeObject<Root>(json);
-            return rootList.securitiesAccount; //.Select(r => r.securitiesAccount).ToList();
+            var root = JsonConvert.DeserializeObject<Root>(json);
+            return root?.SecuritiesAccount;
         }
-
-        public string type { get; set; }
-        public string accountNumber { get; set; }
-        public int roundTrips { get; set; }
-        public bool isDayTrader { get; set; }
-        public bool isClosingOnlyRestricted { get; set; }
-        public bool pfcbFlag { get; set; }
-        public Initialbalances initialBalances { get; set; }
-        public Currentbalances currentBalances { get; set; }
-        public Projectedbalances projectedBalances { get; set; }
-        public Order[] orderStrategies { get; set; }
-        public Position[] positions { get; set; }
 
         public List<Order> FlatOrders
         {
             get
             {
-                return orderStrategies != null ? FlattenOrders(orderStrategies.ToList()) : new List<Order>();
+                return OrderStrategies != null ? FlattenOrders(OrderStrategies.ToList()) : new List<Order>();
             }
         }
 
@@ -49,114 +70,175 @@ namespace EZTM.Common.Schwab.Model
         {
             get
             {
-                if (currentBalances == null || initialBalances == null) return 0.0F;
-                return currentBalances.liquidationValue - initialBalances.liquidationValue;
-                //return this.positions != null ? this.positions.Where(p => p.instrument.assetType == "EQUITY").Sum(p => p.currentDayProfitLoss) : 0;
+                if (CurrentBalances == null || InitialBalances == null) return 0.0F;
+                return 0.0F; // CurrentBalances.liquidationValue - InitialBalances.liquidationValue;
             }
         }
 
         private static List<Order> FlattenOrders(List<Order> orders)
         {
             List<Order> result = new List<Order>();
-
             foreach (var order in orders)
             {
                 result.Add(order);
                 if (order.childOrderStrategies != null && order.childOrderStrategies.Count > 0)
                 {
                     var childOrders = FlattenOrders(order.childOrderStrategies);
-                    foreach (var childOrderStrategy in childOrders)
-                    {
-                        result.Add(childOrderStrategy);
-                    }
+                    result.AddRange(childOrders);
                 }
-
             }
             return result;
         }
-
-
     }
 
     public class Initialbalances
     {
-        public float accruedInterest { get; set; }
-        public float availableFundsNonMarginableTrade { get; set; }
-        public float bondValue { get; set; }
-        public float buyingPower { get; set; }
-        public float cashBalance { get; set; }
-        public float cashAvailableForTrading { get; set; }
-        public float cashReceipts { get; set; }
-        public float dayTradingBuyingPower { get; set; }
-        public float dayTradingBuyingPowerCall { get; set; }
-        public float dayTradingEquityCall { get; set; }
-        public float equity { get; set; }
-        public float equityPercentage { get; set; }
-        public float liquidationValue { get; set; }
-        public float longMarginValue { get; set; }
-        public float longOptionMarketValue { get; set; }
-        public float longStockValue { get; set; }
-        public float maintenanceCall { get; set; }
-        public float maintenanceRequirement { get; set; }
-        public float margin { get; set; }
-        public float marginEquity { get; set; }
-        public float moneyMarketFund { get; set; }
-        public float mutualFundValue { get; set; }
-        public float regTCall { get; set; }
-        public float shortMarginValue { get; set; }
-        public float shortOptionMarketValue { get; set; }
-        public float shortStockValue { get; set; }
-        public float totalCash { get; set; }
-        public bool isInCall { get; set; }
-        public float pendingDeposits { get; set; }
-        public float marginBalance { get; set; }
-        public float shortBalance { get; set; }
-        public float accountValue { get; set; }
+        [JsonProperty("accruedInterest")]
+        public float AccruedInterest { get; set; }
+        [JsonProperty("availableFundsNonMarginableTrade")]
+        public float AvailableFundsNonMarginableTrade { get; set; }
+        [JsonProperty("bondValue")]
+        public float BondValue { get; set; }
+        [JsonProperty("buyingPower")]
+        public float BuyingPower { get; set; }
+        [JsonProperty("cashBalance")]
+        public float CashBalance { get; set; }
+        [JsonProperty("cashAvailableForTrading")]
+        public float CashAvailableForTrading { get; set; }
+        [JsonProperty("cashReceipts")]
+        public float CashReceipts { get; set; }
+        [JsonProperty("dayTradingBuyingPower")]
+        public float DayTradingBuyingPower { get; set; }
+        [JsonProperty("dayTradingBuyingPowerCall")]
+        public float DayTradingBuyingPowerCall { get; set; }
+        [JsonProperty("dayTradingEquityCall")]
+        public float DayTradingEquityCall { get; set; }
+        [JsonProperty("equity")]
+        public float Equity { get; set; }
+        [JsonProperty("equityPercentage")]
+        public float EquityPercentage { get; set; }
+        [JsonProperty("liquidationValue")]
+        public float LiquidationValue { get; set; }
+        [JsonProperty("longMarginValue")]
+        public float LongMarginValue { get; set; }
+        [JsonProperty("longOptionMarketValue")]
+        public float LongOptionMarketValue { get; set; }
+        [JsonProperty("longStockValue")]
+        public float LongStockValue { get; set; }
+        [JsonProperty("maintenanceCall")]
+        public float MaintenanceCall { get; set; }
+        [JsonProperty("maintenanceRequirement")]
+        public float MaintenanceRequirement { get; set; }
+        [JsonProperty("margin")]
+        public float Margin { get; set; }
+        [JsonProperty("marginEquity")]
+        public float MarginEquity { get; set; }
+        [JsonProperty("moneyMarketFund")]
+        public float MoneyMarketFund { get; set; }
+        [JsonProperty("mutualFundValue")]
+        public float MutualFundValue { get; set; }
+        [JsonProperty("regTCall")]
+        public float RegTCall { get; set; }
+        [JsonProperty("shortMarginValue")]
+        public float ShortMarginValue { get; set; }
+        [JsonProperty("shortOptionMarketValue")]
+        public float ShortOptionMarketValue { get; set; }
+        [JsonProperty("shortStockValue")]
+        public float ShortStockValue { get; set; }
+        [JsonProperty("totalCash")]
+        public float TotalCash { get; set; }
+        [JsonProperty("isInCall")]
+        public bool IsInCall { get; set; }
+        [JsonProperty("pendingDeposits")]
+        public float PendingDeposits { get; set; }
+        [JsonProperty("marginBalance")]
+        public float MarginBalance { get; set; }
+        [JsonProperty("shortBalance")]
+        public float ShortBalance { get; set; }
+        [JsonProperty("accountValue")]
+        public float AccountValue { get; set; }
     }
 
     public class Currentbalances
     {
-        public float accruedInterest { get; set; }
-        public float cashBalance { get; set; }
-        public float cashReceipts { get; set; }
-        public float longOptionMarketValue { get; set; }
-        public float liquidationValue { get; set; }
-        public float longMarketValue { get; set; }
-        public float moneyMarketFund { get; set; }
-        public float savings { get; set; }
-        public float shortMarketValue { get; set; }
-        public float pendingDeposits { get; set; }
-        public float mutualFundValue { get; set; }
-        public float bondValue { get; set; }
-        public float shortOptionMarketValue { get; set; }
-        public float availableFunds { get; set; }
-        public float availableFundsNonMarginableTrade { get; set; }
-        public float buyingPower { get; set; }
-        public float buyingPowerNonMarginableTrade { get; set; }
-        public float dayTradingBuyingPower { get; set; }
-        public float equity { get; set; }
-        public float equityPercentage { get; set; }
-        public float longMarginValue { get; set; }
-        public float maintenanceCall { get; set; }
-        public float maintenanceRequirement { get; set; }
-        public float marginBalance { get; set; }
-        public float regTCall { get; set; }
-        public float shortBalance { get; set; }
-        public float shortMarginValue { get; set; }
-        public float sma { get; set; }
+        [JsonProperty("accruedInterest")]
+        public float AccruedInterest { get; set; }
+        [JsonProperty("cashBalance")]
+        public float CashBalance { get; set; }
+        [JsonProperty("cashReceipts")]
+        public float CashReceipts { get; set; }
+        [JsonProperty("longOptionMarketValue")]
+        public float LongOptionMarketValue { get; set; }
+        [JsonProperty("liquidationValue")]
+        public float LiquidationValue { get; set; }
+        [JsonProperty("longMarketValue")]
+        public float LongMarketValue { get; set; }
+        [JsonProperty("moneyMarketFund")]
+        public float MoneyMarketFund { get; set; }
+        [JsonProperty("savings")]
+        public float Savings { get; set; }
+        [JsonProperty("shortMarketValue")]
+        public float ShortMarketValue { get; set; }
+        [JsonProperty("pendingDeposits")]
+        public float PendingDeposits { get; set; }
+        [JsonProperty("mutualFundValue")]
+        public float MutualFundValue { get; set; }
+        [JsonProperty("bondValue")]
+        public float BondValue { get; set; }
+        [JsonProperty("shortOptionMarketValue")]
+        public float ShortOptionMarketValue { get; set; }
+        [JsonProperty("availableFunds")]
+        public float AvailableFunds { get; set; }
+        [JsonProperty("availableFundsNonMarginableTrade")]
+        public float AvailableFundsNonMarginableTrade { get; set; }
+        [JsonProperty("buyingPower")]
+        public float BuyingPower { get; set; }
+        [JsonProperty("buyingPowerNonMarginableTrade")]
+        public float BuyingPowerNonMarginableTrade { get; set; }
+        [JsonProperty("dayTradingBuyingPower")]
+        public float DayTradingBuyingPower { get; set; }
+        [JsonProperty("equity")]
+        public float Equity { get; set; }
+        [JsonProperty("equityPercentage")]
+        public float EquityPercentage { get; set; }
+        [JsonProperty("longMarginValue")]
+        public float LongMarginValue { get; set; }
+        [JsonProperty("maintenanceCall")]
+        public float MaintenanceCall { get; set; }
+        [JsonProperty("maintenanceRequirement")]
+        public float MaintenanceRequirement { get; set; }
+        [JsonProperty("marginBalance")]
+        public float MarginBalance { get; set; }
+        [JsonProperty("regTCall")]
+        public float RegTCall { get; set; }
+        [JsonProperty("shortBalance")]
+        public float ShortBalance { get; set; }
+        [JsonProperty("shortMarginValue")]
+        public float ShortMarginValue { get; set; }
+        [JsonProperty("sma")]
+        public float Sma { get; set; }
     }
 
     public class Projectedbalances
     {
-        public float availableFunds { get; set; }
-        public float availableFundsNonMarginableTrade { get; set; }
-        public float buyingPower { get; set; }
-        public float dayTradingBuyingPower { get; set; }
-        public float dayTradingBuyingPowerCall { get; set; }
-        public float maintenanceCall { get; set; }
-        public float regTCall { get; set; }
-        public bool isInCall { get; set; }
-        public float stockBuyingPower { get; set; }
+        [JsonProperty("availableFunds")]
+        public float AvailableFunds { get; set; }
+        [JsonProperty("availableFundsNonMarginableTrade")]
+        public float AvailableFundsNonMarginableTrade { get; set; }
+        [JsonProperty("buyingPower")]
+        public float BuyingPower { get; set; }
+        [JsonProperty("dayTradingBuyingPower")]
+        public float DayTradingBuyingPower { get; set; }
+        [JsonProperty("dayTradingBuyingPowerCall")]
+        public float DayTradingBuyingPowerCall { get; set; }
+        [JsonProperty("maintenanceCall")]
+        public float MaintenanceCall { get; set; }
+        [JsonProperty("regTCall")]
+        public float RegTCall { get; set; }
+        [JsonProperty("isInCall")]
+        public bool IsInCall { get; set; }
+        [JsonProperty("stockBuyingPower")]
+        public float StockBuyingPower { get; set; }
     }
 
 }
